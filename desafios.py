@@ -1,7 +1,5 @@
 import textwrap
 
-# --- FUNÇÕES DE OPERAÇÃO (Apenas manipulam dados) ---
-
 def depositar(valor, saldo, extrato, /):
     """
     Processa um depósito. Apenas manipula os dados e retorna o novo estado.
@@ -9,7 +7,6 @@ def depositar(valor, saldo, extrato, /):
     """
     if valor > 0:
         saldo += valor
-        # O extrato agora só registra a MOVIMENTAÇÃO
         extrato += f"Depósito:\tR$ {valor:.2f}\n" 
         sucesso = True
     else:
@@ -41,19 +38,62 @@ def sacar(*, saldo, valor, extrato, limite, numero_saques, limite_saques):
         
     return saldo, extrato, numero_saques
 
-# --- FUNÇÕES DE EXIBIÇÃO (Apenas mostram coisas na tela) ---
 def mostrar_extrato(saldo, /, *, extrato):
     """
     Função dedicada a EXIBIR o extrato de forma formatada.
     """
     print("\n================ EXTRATO ================")
-    # Se a string 'extrato' estiver vazia, mostra a mensagem.
-    # Senão, imprime o histórico de transações.
     print("Não foram realizadas movimentações." if not extrato else extrato.strip())
-    
-    # Exibe o saldo final, bem alinhado
     print(f"\nSaldo:\t\tR$ {saldo:.2f}")
     print("==========================================")
+
+def criar_usuario(usuarios):
+    cpf = input("Informe o CPF (somente números): ")
+    usuario = filtrar_usuario(cpf, usuarios)
+
+    if usuario:
+        print("\n@@@ Já existe usuário com esse CPF! @@@")
+        return
+
+    nome = input("Informe o nome completo: ")
+    data_nascimento = input("Informe a data de nascimento (dd-mm-aaaa): ")
+    endereco = input("Informe o endereço (logradouro, nro - bairro - cidade/sigla estado): ")
+
+    usuarios.append({
+        "nome": nome,
+        "data_nascimento": data_nascimento,
+        "cpf": cpf,
+        "endereco": endereco
+    })
+
+    print("\n=== Usuário criado com sucesso! ===")
+
+def filtrar_usuario(cpf, usuarios):
+    usuarios_filtrados = [usuario for usuario in usuarios if usuario["cpf"] == cpf]
+    return usuarios_filtrados[0] if usuarios_filtrados else None
+
+def criar_conta(agencia, numero_conta, usuarios):
+    cpf = input("Informe o CPF do usuário: ")
+    usuario = filtrar_usuario(cpf, usuarios)
+
+    if usuario:
+        print("\n=== Conta criada com sucesso! ===")
+        return {
+            "agencia": agencia,
+            "numero_conta": numero_conta,
+            "usuario": usuario,
+        }
+
+    print("\n@@@ Usuário não encontrado, fluxo de criação de conta encerrado! @@@")
+
+def listar_contas(contas):
+    for conta in contas:
+        usuario = conta["usuario"]
+        print(f"""
+            Agência:\t{conta['agencia']}
+            C/C:\t\t{conta['numero_conta']}
+            Titular:\t{usuario['nome']}
+        """)
 
 def menu():
     frase_prompt = "\nPor favor, digite a opção desejada => "
@@ -63,23 +103,26 @@ def menu():
         [d]\tDepositar
         [s]\tSacar
         [e]\tExtrato
+        [nu]\tNovo usuário
+        [nc]\tNova conta
+        [lc]\tListar contas
         [q]\tSair
 
         ================================
     {frase_prompt}"""))
 
-# --- FUNÇÃO PRINCIPAL (A Orquestradora) ---
-
 def main():
-    # Constantes e variáveis de estado
     LIMITE_SAQUES = 3
+    AGENCIA = "0001"
+
     saldo = 0
     limite = 500
     extrato = ""
     numero_saques = 0
+    usuarios = []
+    contas = []
 
     while True:
-        # Padroniza a entrada do usuário
         opcao = menu().lower().strip()
 
         match opcao:
@@ -109,9 +152,16 @@ def main():
                     print("\n@@@ Operação falhou! Por favor, informe um número válido. @@@")
 
             case 'e':
-                # A única responsabilidade do 'e' é chamar a função de exibição
                 mostrar_extrato(saldo, extrato=extrato)
-
+            case 'nu':
+                criar_usuario(usuarios)
+            case 'nc':
+                numero_conta = len(contas) + 1
+                conta = criar_conta(AGENCIA, numero_conta, usuarios)
+                if conta:
+                    contas.append(conta)
+            case 'lc':
+                listar_contas(contas)
             case 'q':
                 print("\nObrigado por usar nosso sistema! Saindo...")
                 break
